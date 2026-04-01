@@ -69,3 +69,7 @@ out
 .vscode/
 *.swp
 *.swo
+
+# AI & Agent Tools
+.gemini/
+.antigravity/

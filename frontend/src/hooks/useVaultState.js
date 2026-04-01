@@ -8,7 +8,11 @@ export function useVaultState() {
   const [state, setState] = useState(null);
   const [connections, setConnections] = useState(0);
   const [assignment, setAssignment] = useState(null);
+  const [stats, setStats] = useState({ itemsEntered: 0, peakUsers: 0, resets: 0 });
+  const [actionLog, setActionLog] = useState([]);
+  const [lastSubmission, setLastSubmission] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [voteState, setVoteState] = useState(null);
 
   useEffect(() => {
     const newSocket = io(URL);
@@ -26,6 +30,22 @@ export function useVaultState() {
       setAssignment(guess);
     });
 
+    newSocket.on('stats_update', (newStats) => {
+      setStats(newStats);
+    });
+
+    newSocket.on('log_update', (log) => {
+      setActionLog(log);
+    });
+
+    newSocket.on('toast_msg', (msg) => {
+      window.alert(msg);
+    });
+
+    newSocket.on('vote_update', (newVoteState) => {
+      setVoteState(newVoteState);
+    });
+
     return () => newSocket.close();
   }, []);
 
@@ -35,6 +55,7 @@ export function useVaultState() {
 
   const submitResult = (guess, results, isFinal = false) => {
     if (socket) {
+      setLastSubmission(results);
       socket.emit('submit_result', { guess, results, isFinal });
       if (isFinal) {
         setAssignment(null);
@@ -46,5 +67,21 @@ export function useVaultState() {
     if (socket) socket.emit('reset_vault');
   };
 
-  return { state, connections, assignment, requestAssignment, submitResult, resetVault };
+  const undoLastSubmission = () => {
+    if (socket && lastSubmission) {
+      const inverseResults = {};
+      for (const cat of Object.keys(lastSubmission)) {
+        inverseResults[cat] = {};
+        for (const ingredient of Object.keys(lastSubmission[cat])) {
+          inverseResults[cat][ingredient] = 'Pending';
+        }
+      }
+      socket.emit('submit_result', { guess: null, results: inverseResults, isFinal: false });
+      setLastSubmission(null);
+    } else {
+      window.alert("No local submission history to undo.");
+    }
+  };
+
+  return { state, voteState, connections, assignment, stats, actionLog, requestAssignment, submitResult, resetVault, undoLastSubmission };
 }

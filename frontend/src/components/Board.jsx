@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
-export function Board({ state }) {
+export function Board({ state, voteState }) {
   if (!state) return null;
   
   const { categories, confirmed, incorrect, partial } = state;
@@ -56,22 +56,46 @@ export function Board({ state }) {
                     let Icon = null;
                     
                     const isConfirmed = confirmedItems.includes(item);
+                    const isIncorrect = incorrectItems.includes(item);
+                    const isPartial = partialItems.includes(item);
 
                     if (isConfirmed) {
                       statusStyles = "text-emerald-100 bg-emerald-900/60 border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
                       Icon = CheckCircle2;
-                    } else if (incorrectItems.includes(item)) {
+                    } else if (isIncorrect) {
                       statusStyles = "text-red-400 bg-red-950/20 opacity-40 border-red-900/30 line-through";
                       Icon = XCircle;
-                    } else if (partialItems.includes(item)) {
+                    } else if (isPartial) {
                       statusStyles = "text-amber-200 bg-amber-900/40 border-amber-500/50";
                       Icon = AlertCircle;
                     }
 
+                    const vState = voteState?.[catId]?.[item] || { Correct: 0, Partial: 0, Wrong: 0 };
+                    const totalVotes = vState.Correct + vState.Partial + vState.Wrong;
+                    const pctCorrect = totalVotes > 0 ? (vState.Correct / totalVotes) * 100 : 0;
+                    const pctPartial = totalVotes > 0 ? (vState.Partial / totalVotes) * 100 : 0;
+                    const pctWrong = totalVotes > 0 ? (vState.Wrong / totalVotes) * 100 : 0;
+                    
+                    const tooltipText = totalVotes > 0 
+                      ? `${totalVotes} Vote${totalVotes > 1 ? 's' : ''} | Correct: ${pctCorrect.toFixed(0)}% | Partial: ${pctPartial.toFixed(0)}% | Wrong: ${pctWrong.toFixed(0)}%`
+                      : "No pending votes";
+
                     return (
-                      <li key={item} className={`px-2 py-1 rounded text-[11px] border flex items-center gap-1 transition-all ${statusStyles}`}>
-                        <span className="font-medium whitespace-nowrap">{item}</span>
-                        {Icon && <Icon className={`w-3 h-3 ${isConfirmed ? 'text-emerald-400' : incorrectItems.includes(item) ? 'text-red-900' : 'text-amber-400'}`} />}
+                      <li 
+                        key={item} 
+                        className={`px-2 py-1 rounded text-[11px] border flex items-center gap-1 transition-all relative overflow-hidden cursor-help ${statusStyles}`}
+                        title={tooltipText}
+                      >
+                        <span className="font-medium whitespace-nowrap relative z-10">{item}</span>
+                        {Icon && <Icon className={`w-3 h-3 relative z-10 ${isConfirmed ? 'text-emerald-400' : isIncorrect ? 'text-red-900' : 'text-amber-400'}`} />}
+                        
+                        {totalVotes > 0 && !isConfirmed && !isIncorrect && !isPartial && (
+                          <div className="absolute bottom-0 left-0 right-0 flex h-[3px] opacity-80">
+                            {pctCorrect > 0 && <div className="bg-emerald-500 h-full" style={{ width: `${pctCorrect}%` }} />}
+                            {pctPartial > 0 && <div className="bg-amber-500 h-full" style={{ width: `${pctPartial}%` }} />}
+                            {pctWrong > 0 && <div className="bg-red-500 h-full" style={{ width: `${pctWrong}%` }} />}
+                          </div>
+                        )}
                       </li>
                     )
                   })}

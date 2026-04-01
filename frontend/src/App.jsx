@@ -2,14 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useVaultState } from './hooks/useVaultState';
 import { Board } from './components/Board';
 import { AssignmentForm } from './components/AssignmentForm';
+import { ManualOverrideForm } from './components/ManualOverrideForm';
 import { ProgressBar } from './components/ProgressBar';
 import { InfoModal } from './components/InfoModal';
-import { Users, Shield, RotateCcw, Info } from 'lucide-react';
+import { StatsTicker } from './components/StatsTicker';
+import { HistoryModal } from './components/HistoryModal';
+import { Users, Shield, RotateCcw, Info, History, Undo } from 'lucide-react';
 
 function App() {
-  const { state, connections, assignment, requestAssignment, submitResult, resetVault } = useVaultState();
+  const { state, voteState, connections, assignment, stats, actionLog, requestAssignment, submitResult, resetVault, undoLastSubmission } = useVaultState();
   const [confirmReset, setConfirmReset] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     const hasSeenInfo = localStorage.getItem('burrito_vault_info_seen');
@@ -34,13 +38,15 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-emerald-500/30 text-sm">
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-emerald-500/30 text-sm flex flex-col">
+      <StatsTicker stats={stats} />
+      
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none mt-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 blur-[120px] rounded-full mix-blend-screen"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-900/10 blur-[120px] rounded-full mix-blend-screen"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-4 md:py-6">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 py-4 md:py-6 flex-grow">
         <header className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-slate-800/80 pb-3 gap-3">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-emerald-500 to-cyan-500 p-2 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.2)]">
@@ -54,7 +60,14 @@ function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button 
+              onClick={() => setIsHistoryOpen(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:bg-slate-700 transition-colors shadow-xl"
+              title="Action History"
+            >
+              <History className="w-4 h-4" />
+            </button>
             <button 
               onClick={() => setIsInfoOpen(true)}
               className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors shadow-xl"
@@ -62,23 +75,35 @@ function App() {
             >
               <Info className="w-4 h-4" />
             </button>
-            <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700/50 backdrop-blur-sm shadow-xl">
+            
+            <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700/50 backdrop-blur-sm shadow-xl shrink-0">
               <Users className="w-3 h-3 text-emerald-400" />
               <span className="text-xs font-semibold text-white">{connections}</span>
               <span className="text-xs text-slate-400 hidden sm:inline">Online</span>
             </div>
             {state && (
-              <button 
-                onClick={handleReset}
-                className={`flex items-center gap-1 border px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  confirmReset 
-                    ? 'bg-red-600/90 text-white border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
-                    : 'bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/30'
-                }`}
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span className="hidden sm:inline">{confirmReset ? 'Confirm Reset' : 'Reset'}</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={undoLastSubmission}
+                  className="flex items-center gap-1 border px-3 py-1.5 rounded-full text-xs font-bold transition-all bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/30"
+                  title="Undo Last Global Entry"
+                >
+                  <Undo className="w-3 h-3" />
+                  <span className="hidden sm:inline">Undo</span>
+                </button>
+
+                <button 
+                  onClick={handleReset}
+                  className={`flex items-center gap-1 border px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    confirmReset 
+                      ? 'bg-red-600/90 text-white border-red-500 shadow-[0_0_15px_rgba(220,38,38,0.5)]' 
+                      : 'bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/30'
+                  }`}
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span className="hidden sm:inline">{confirmReset ? 'Confirm Reset' : 'Reset'}</span>
+                </button>
+              </div>
             )}
           </div>
         </header>
@@ -95,14 +120,21 @@ function App() {
             <div className="lg:col-span-5 xl:col-span-4 order-2 lg:order-1 lg:sticky lg:top-4">
               <AssignmentForm 
                 assignment={assignment} 
+                vaultState={state}
                 requestAssignment={requestAssignment} 
                 submitResult={submitResult}
                 isConnected={!!state} 
               />
+              {state && (
+                <ManualOverrideForm 
+                  vaultState={state}
+                  submitResult={submitResult}
+                />
+              )}
             </div>
             
             <div className="lg:col-span-7 xl:col-span-8 order-1 lg:order-2">
-              <Board state={state} />
+              <Board state={state} voteState={voteState} />
             </div>
           </div>
         </main>
@@ -113,6 +145,7 @@ function App() {
       </div>
 
       <InfoModal isOpen={isInfoOpen} onClose={handleCloseInfo} />
+      <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} log={actionLog} />
     </div>
   );
 }

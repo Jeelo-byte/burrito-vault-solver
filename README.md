@@ -8,6 +8,7 @@ Built with a **Node.js + Express + Socket.io** backend and a **Vite + React + Ta
 
 - **True Combinatorial Engine**: The backend mathematically maps all 3,801,088 exact permutations (including complex "Half/Half" meat selections and multi-select topping subsets) and distributes unique guesses so no two operatives test the same combination.
 - **Immediate Live-Syncing**: Using WebSockets, the second a user marks an ingredient as 'Wrong', the server filters that ingredient out of all remaining 3.8 million permutations and immediately updates everyone's Vault Grid and Progress Bar without waiting for the user to finish their assignment.
+- **Crowd Consensus Voting**: For larger deployments (> 10 users), the solver automatically switches from instant-locking to a dynamic percentage-based vote tracking system, protecting the global vault state from errant inputs.
 - **Per-Ingredient Voting**: Assignments automatically unpack complex tuples (e.g., `Chicken & Steak`) into individual rows so users can evaluate and submit results for each ingredient completely independently. 
 - **Locked Vault Tracker**: The UI prominently highlights confirmed ingredients at the top of the interface and formats them seamlessly.
 - **Mobile-First Compact UI**: Designed to be aggressively compact and responsive using custom CSS scrollbars and tight flex wrap configurations, operating flawlessly on mobile devices.

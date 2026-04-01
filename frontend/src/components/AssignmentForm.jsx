@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Send, Crosshair } from 'lucide-react';
 
-export function AssignmentForm({ assignment, requestAssignment, submitResult, isConnected }) {
+export function AssignmentForm({ assignment, requestAssignment, submitResult, isConnected, vaultState }) {
   const [results, setResults] = useState({});
 
   useEffect(() => {
@@ -12,13 +12,21 @@ export function AssignmentForm({ assignment, requestAssignment, submitResult, is
         if (items) {
           const uniqueItems = [...new Set(items)];
           uniqueItems.forEach(item => {
-            initial[cat][item] = 'Pending';
+            if (vaultState?.confirmed?.[cat]?.includes(item)) {
+              initial[cat][item] = 'Correct';
+            } else if (vaultState?.incorrect?.[cat]?.includes(item)) {
+              initial[cat][item] = 'Wrong';
+            } else if (vaultState?.partial?.[cat]?.includes(item)) {
+              initial[cat][item] = 'Partial';
+            } else {
+              initial[cat][item] = 'Pending';
+            }
           });
         }
       });
       setResults(initial);
     }
-  }, [assignment]);
+  }, [assignment, vaultState]);
 
   if (!isConnected) {
     return (
@@ -58,12 +66,6 @@ export function AssignmentForm({ assignment, requestAssignment, submitResult, is
     let newResults;
     setResults(prev => {
       const nextCat = { ...prev[cat], [item]: status };
-      
-      if (status === 'Partial' || status === 'Wrong') {
-        Object.keys(nextCat).forEach(k => {
-          nextCat[k] = status;
-        });
-      }
       
       newResults = {
         ...prev,
